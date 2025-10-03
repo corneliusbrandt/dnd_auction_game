@@ -13,18 +13,24 @@ class FirstAgent:
     def __init__(self):
         pass
 
-    def max_bid(agent_id:str, current_round:int, states:dict, auctions:dict, prev_auctions:dict, bank_state:dict):
+    def get_auctions(self, auctions:dict):
+        auctions_list = []
+        for auction_id, auction in auctions.items():
+            auctions_list.append(auction)
+        return auctions_list
+
+    def max_bid(self, agent_id:str, current_round:int, states:dict, auctions:dict, prev_auctions:dict, bank_state:dict):
         agent_state = states[agent_id]
         current_gold = agent_state["gold"]
         points = agent_state["points"]
+        auctions_list = self.get_auctions(auctions)
 
         next_round_gold_income = 0
         if len(bank_state["gold_income_per_round"]) > 0:
             next_round_gold_income = bank_state["gold_income_per_round"][0]   
 
-
-        return{}
-    
+        print(auctions_list)
+        return {}
 
 
 if __name__ == "__main__":
@@ -40,7 +46,7 @@ if __name__ == "__main__":
                                 port=port)
     agent = FirstAgent()
     try:
-        game.run(agent.max_bid())
+        game.run(agent.max_bid)
     except KeyboardInterrupt:
         print("<interrupt - shutting down>")
 
