@@ -13,13 +13,30 @@ class FirstAgent:
     def __init__(self):
         pass
 
+    def expected_value(self, auction:dict) -> float:
+        e = (auction["num"] * ((auction["die"] + 1)/2)) + auction["bonus"]
+        return e
+    
+    def variance(self, auction:dict) -> float:
+        die = auction["die"]
+        num = auction["num"]
+        variance = num * ((die**2 - 1) / 12)
+        return variance
+   
+
+    def evaluate_downside_risk(self, auction:dict) -> float:
+        pass
+
     def get_auctions(self, auctions:dict):
         auctions_list = []
         for auction_id, auction in auctions.items():
             auctions_list.append(auction)
+            auction["expected_value"] = self.expected_value(auction)
+            auction["std_dev"] = self.variance(auction) ** 0.5
+            auction["id"] = auction_id
         return auctions_list
 
-    def max_bid(self, agent_id:str, current_round:int, states:dict, auctions:dict, prev_auctions:dict, bank_state:dict):
+    def bid(self, agent_id:str, current_round:int, states:dict, auctions:dict, prev_auctions:dict, bank_state:dict):
         agent_state = states[agent_id]
         current_gold = agent_state["gold"]
         points = agent_state["points"]
@@ -46,7 +63,7 @@ if __name__ == "__main__":
                                 port=port)
     agent = FirstAgent()
     try:
-        game.run(agent.max_bid)
+        game.run(agent.bid)
     except KeyboardInterrupt:
         print("<interrupt - shutting down>")
 
