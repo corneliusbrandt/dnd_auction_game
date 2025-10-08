@@ -96,11 +96,11 @@ class FirstAgent:
     
 
     def live_plot_rounds(self, x, y1, y2, colors=('g', 'b'),
-                         xlabel='Runde', ylabel='Wert', title='Live-Tracking: Money & Points'):
+                         xlabel='Round', ylabel='Wert', title='Live-Tracking: Money & Points', lines=None):
         """
         Aktualisiert den Live-Plot mit 'Money' und 'Points' über die Runden hinweg.
         """
-        if self.lines is None:
+        if lines is None:
             plt.ion()
             self.fig, self.ax = plt.subplots()
             line_money, = self.ax.plot(x, y1, colors[0] + '-', label='Money')
@@ -162,7 +162,7 @@ class FirstAgent:
         self.rounds.append(current_round)
         self.money.append(current_gold)
         self.points.append(points)
-        self.live_plot_rounds(self.rounds, self.money, self.points)
+        self.live_plot_rounds(self.rounds, self.money, self.points, lines=self.lines)
 
         return bids
 
