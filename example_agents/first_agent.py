@@ -85,15 +85,18 @@ class FirstAgent:
     
     def get_wanted_auctions(self, auctions:list, min_utility, max_utility):
         wanted_auctions = []
-        best_3_auctions = []
+        best_2_auctions = []
         sorted_auctions = sorted(auctions, key=lambda x: x["utility"], reverse=True)
+        # Get auctions within the desired utility range
         for auction in sorted_auctions:
             if min_utility <= auction["utility"] <= max_utility:
                 wanted_auctions.append(auction)
+        # Limit to 3 auctions if more are wanted
+        if len(wanted_auctions) > 3:
+            wanted_auctions = random.sample(wanted_auctions, 3)
 
-        best_3_auctions = sorted_auctions[:3]
-        return wanted_auctions, best_3_auctions
-    
+        best_2_auctions = sorted_auctions[:2]
+        return wanted_auctions, best_2_auctions
 
     def live_plot_rounds(self, x, y1, y2, colors=('g', 'b'),
                          xlabel='Round', ylabel='Wert', title='Live-Tracking: Money & Points', lines=None):
@@ -143,17 +146,29 @@ class FirstAgent:
         if len(bank_state["gold_income_per_round"]) > 0:
             next_round_gold_income = bank_state["gold_income_per_round"][0]
 
-        auctions_to_bid, best_3_auctions = self.get_wanted_auctions(auctions_list, min_utility=5, max_utility=20)
+        # Bid mechanism
+        auctions_to_bid, best_2_auctions = self.get_wanted_auctions(auctions_list, min_utility=5, max_utility=20)
         bids = {}
         if current_round % 100 == 0:
-            bid_amount = 0.25 * current_gold
-            for auction in best_3_auctions:
+            bid_amount = 0.40 * current_gold
+            for auction in best_2_auctions:
+                if current_gold > bid_amount:
+                    bids[auction["id"]] = int(bid_amount)
+                    current_gold -= int(bid_amount)
+        elif current_round == 999:
+            bid_amount = current_gold
+            for auction in best_2_auctions[:1]:
+                    bids[auction["id"]] = int(bid_amount)
+                    current_gold -= int(bid_amount)
+        elif best_2_auctions[0]["utility"] > 30 and current_gold > 4000:
+            bid_amount = 0.80 * current_gold
+            for auction in best_2_auctions[:1]:
                 if current_gold > bid_amount:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
         else:
             for auction in auctions_to_bid:
-                bid_amount = ((0.6 * current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
+                bid_amount = ((0.50 * current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
                 if current_gold > 2000:
                     bids[auction["id"]] = bid_amount
                     current_gold -= bid_amount
