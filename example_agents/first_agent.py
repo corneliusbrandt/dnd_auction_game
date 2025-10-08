@@ -12,7 +12,10 @@ import matplotlib.pyplot as plt
 
 class FirstAgent:
     def __init__(self):
-        pass
+        self.lines = None    
+        self.rounds = []      
+        self.money = []        
+        self.points = [] 
 
     def expected_value(self, auction:dict) -> float:
         """
@@ -82,11 +85,43 @@ class FirstAgent:
     
     def get_wanted_auctions(self, auctions:list, min_utility, max_utility):
         wanted_auctions = []
+        best_3_auctions = []
         sorted_auctions = sorted(auctions, key=lambda x: x["utility"], reverse=True)
         for auction in sorted_auctions:
             if min_utility <= auction["utility"] <= max_utility:
                 wanted_auctions.append(auction)
-        return wanted_auctions
+
+        best_3_auctions = sorted_auctions[:3]
+        return wanted_auctions, best_3_auctions
+    
+
+    def live_plot_rounds(self, x, y1, y2, colors=('g', 'b'),
+                         xlabel='Runde', ylabel='Wert', title='Live-Tracking: Money & Points'):
+        """
+        Aktualisiert den Live-Plot mit 'Money' und 'Points' über die Runden hinweg.
+        """
+        if self.lines is None:
+            plt.ion()
+            self.fig, self.ax = plt.subplots()
+            line_money, = self.ax.plot(x, y1, colors[0] + '-', label='Money')
+            line_points, = self.ax.plot(x, y2, colors[1] + '-', label='Points')
+            self.ax.set_xlabel(xlabel)
+            self.ax.set_ylabel(ylabel)
+            self.ax.set_title(title)
+            self.ax.legend()
+            plt.show()
+            self.lines = (line_money, line_points)
+        else:
+            line_money, line_points = self.lines
+            line_money.set_xdata(x)
+            line_money.set_ydata(y1)
+            line_points.set_xdata(x)
+            line_points.set_ydata(y2)
+            self.ax.relim()
+            self.ax.autoscale_view()
+
+        plt.pause(0.05)
+
 
 #############################################################################################
 
@@ -108,13 +143,26 @@ class FirstAgent:
         if len(bank_state["gold_income_per_round"]) > 0:
             next_round_gold_income = bank_state["gold_income_per_round"][0]
 
-        auctions_to_bid = self.get_wanted_auctions(auctions_list, min_utility=15, max_utility=50)
+        auctions_to_bid, best_3_auctions = self.get_wanted_auctions(auctions_list, min_utility=5, max_utility=20)
         bids = {}
-        for auction in auctions_to_bid:
-            bid_amount = 300
-            if current_gold > 2000:
-                bids[auction["id"]] = bid_amount
-                current_gold -= bid_amount
+        if current_round % 100 == 0:
+            bid_amount = 0.25 * current_gold
+            for auction in best_3_auctions:
+                if current_gold > bid_amount:
+                    bids[auction["id"]] = int(bid_amount)
+                    current_gold -= int(bid_amount)
+        else:
+            for auction in auctions_to_bid:
+                bid_amount = ((0.6 * current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
+                if current_gold > 2000:
+                    bids[auction["id"]] = bid_amount
+                    current_gold -= bid_amount
+
+        #Plotting
+        self.rounds.append(current_round)
+        self.money.append(current_gold)
+        self.points.append(points)
+        self.live_plot_rounds(self.rounds, self.money, self.points)
 
         return bids
 
@@ -138,4 +186,8 @@ if __name__ == "__main__":
         print("<interrupt - shutting down>")
 
     print("<game is done>")
+
+    # Keep plot open
+    plt.ioff()
+    plt.show()
 
