@@ -104,13 +104,15 @@ class FirstAgent:
         wanted_auctions = []
         best_2_auctions = []
         sorted_auctions = sorted(auctions, key=lambda x: x["utility"], reverse=True)
+
         # Get auctions within the desired utility range
         for auction in sorted_auctions:
             if min_utility <= auction["utility"] <= max_utility:
                 wanted_auctions.append(auction)
-        # Limit to 3 auctions if more are wanted
-        if len(wanted_auctions) > 3:
-            wanted_auctions = random.sample(wanted_auctions, 3)
+
+        # Limit to 5 auctions if more are wanted
+        if len(wanted_auctions) > 5:
+            wanted_auctions = random.sample(wanted_auctions, 5)
 
         best_2_auctions = sorted_auctions[:2]
         return wanted_auctions, best_2_auctions
@@ -118,44 +120,56 @@ class FirstAgent:
     def live_plot_rounds(self, x, y1, y2, colors=('g', 'b'),
                         xlabel='Round', ylabel='Wert', title='Live-Tracking: Money & Points', lines=None):
         """
-        Aktualisiert den Live-Plot mit 'Money' und 'Points' über die Runden hinweg.
-        Zusätzlich wird die Effizienz (Points pro Gold in den letzten 10 Runden) angezeigt.
+        Creates a live plot for tracking Money and Points over rounds.
         """
         if lines is None:
             plt.ion()
-            self.fig, self.ax = plt.subplots()
-            line_money, = self.ax.plot(x, y1, colors[0] + '-', label='Money')
-            line_points, = self.ax.plot(x, y2, colors[1] + '-', label='Points')
-            self.ax.set_xlabel(xlabel)
-            self.ax.set_ylabel(ylabel)
-            self.ax.set_title(title)
-            self.ax.legend()
-            # Textobjekt für Effizienz anlegen
-            self.eff_text = self.ax.text(0.02, 0.95, "", transform=self.ax.transAxes, fontsize=10,
-                                        verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            # Zwei Subplots untereinander (2 Reihen, 1 Spalte)
+            self.fig, (self.ax_money, self.ax_points) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+            plt.subplots_adjust(hspace=0.3)
+
+            # Money-Plot
+            line_money, = self.ax_money.plot(x, y1, colors[0] + '-', label='Money')
+            self.ax_money.set_ylabel('Gold')
+            self.ax_money.set_title('Money over Rounds')
+            self.ax_money.legend()
+
+            # Points-Plot
+            line_points, = self.ax_points.plot(x, y2, colors[1] + '-', label='Points')
+            self.ax_points.set_xlabel(xlabel)
+            self.ax_points.set_ylabel('Points')
+            self.ax_points.set_title('Points over Rounds')
+            self.ax_points.legend()
+
+            # Textbox oben rechts im Points-Plot für Effizienz
+            self.eff_text = self.ax_points.text(0.98, 0.95, "", transform=self.ax_points.transAxes,
+                                                fontsize=10, verticalalignment='top', horizontalalignment='right',
+                                                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
             plt.show()
             self.lines = (line_money, line_points)
+
         else:
             line_money, line_points = self.lines
             line_money.set_xdata(x)
             line_money.set_ydata(y1)
             line_points.set_xdata(x)
             line_points.set_ydata(y2)
-            self.ax.relim()
-            self.ax.autoscale_view()
+
+            self.ax_money.relim()
+            self.ax_money.autoscale_view()
+            self.ax_points.relim()
+            self.ax_points.autoscale_view()
 
         # --- Effizienz (Points pro Gold über letzte 10 Runden) ---
         efficiency = 0
-        if len(self.points) >= 10:
-            delta_points = self.points[-1] - self.points[-10]
-            delta_gold = self.money[-10] - self.money[-1]
-            if delta_gold > 0:
-                efficiency = delta_points / delta_gold
+        sum_points = sum(self.points[-10:])
+        sum_gold = sum(self.money[-10:])
+        if sum_gold > 0:
+            efficiency = sum_points / sum_gold
+
         self.eff_text.set_text(f"Points/Gold (10R): {efficiency:.3f}")
 
         plt.pause(0.05)
-
-
 
 #############################################################################################
 
@@ -164,7 +178,6 @@ class FirstAgent:
         current_gold = agent_state["gold"]
         points = agent_state["points"]
         self.load_params()
-        print(f"Current Params - Threshold: {self.threshold}, Min Utility: {self.min_utility}, Max Utility: {self.max_utility}")
 
         # get auction parameters
         auctions_list = self.get_auctions(auctions)
@@ -173,27 +186,22 @@ class FirstAgent:
             utility, downside_risk = self.evaluate_downside_risk(auction, threshold=self.threshold, risk_factor=self.risk_factor)
             auction["downside_risk"] = downside_risk
             auction["utility"] = utility
-            
-
-        next_round_gold_income = 0
-        if len(bank_state["gold_income_per_round"]) > 0:
-            next_round_gold_income = bank_state["gold_income_per_round"][0]
 
         # Bid mechanism
         auctions_to_bid, best_2_auctions = self.get_wanted_auctions(auctions_list, min_utility=self.min_utility, max_utility=self.max_utility)
         bids = {}
         if current_round % 100 == 0:
-            bid_amount = 0.40 * current_gold
+            bid_amount = 0.30 * current_gold
             for auction in best_2_auctions:
                 if current_gold > bid_amount:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
-        elif current_round == 999:
-            bid_amount = current_gold
+        elif current_round >= 994:
+            bid_amount = 0.20 * current_gold
             for auction in best_2_auctions[:1]:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
-        elif best_2_auctions[0]["utility"] > 40 and current_gold > 4000:
+        elif best_2_auctions[0]["utility"] > 40 and current_gold > 3000:
             bid_amount = 0.60 * current_gold
             for auction in best_2_auctions[:1]:
                 if current_gold > bid_amount:
