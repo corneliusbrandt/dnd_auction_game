@@ -202,7 +202,7 @@ class FirstAgent:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
         elif best_2_auctions[0]["utility"] > 40 and current_gold > 3000:
-            bid_amount = 0.60 * current_gold
+            bid_amount = 0.50 * current_gold
             for auction in best_2_auctions[:1]:
                 if current_gold > bid_amount:
                     bids[auction["id"]] = int(bid_amount)
@@ -226,9 +226,9 @@ class FirstAgent:
 
 if __name__ == "__main__":
     
-    host = "localhost"
+    host = "opentsetlin.com"
     agent_name = "{}_{}".format(os.path.basename(__file__), random.randint(1, 1000))
-    player_id = "id_of_human_player"
+    player_id = "Cornelius Paul Brandt"
     port = 8000
 
     game = AuctionGameClient(host=host,

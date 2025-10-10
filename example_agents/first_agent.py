@@ -185,9 +185,9 @@ class FirstAgent:
 
 if __name__ == "__main__":
     
-    host = "localhost"
+    host = "opentsetlin.com"
     agent_name = "{}_{}".format(os.path.basename(__file__), random.randint(1, 1000))
-    player_id = "id_of_human_player"
+    player_id = "Cornelius Paul Brandt"
     port = 8000
 
     game = AuctionGameClient(host=host,
