@@ -4,6 +4,8 @@ import os
 from dnd_auction_game import AuctionGameClient
 import matplotlib.pyplot as plt
 import json
+from matplotlib.widgets import Slider
+
 
 ############################################################################################
 #
@@ -129,7 +131,7 @@ class FirstAgent:
             plt.ion()
             # Zwei Subplots untereinander (2 Reihen, 1 Spalte)
             self.fig, (self.ax_money, self.ax_points) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-            plt.subplots_adjust(hspace=0.3)
+            plt.subplots_adjust(hspace=0.3, bottom=0.25)
 
             # Money-Plot
             line_money, = self.ax_money.plot(x, y1, colors[0] + '-', label='Money')
@@ -151,6 +153,28 @@ class FirstAgent:
             plt.show()
             self.lines = (line_money, line_points)
 
+            # --- Slider für Threshold, Risk, MinU, MaxU ---
+            slider_ax_threshold = self.fig.add_axes([0.15, 0.02, 0.65, 0.03])
+            slider_ax_risk      = self.fig.add_axes([0.15, 0.06, 0.65, 0.03])
+            slider_ax_minU      = self.fig.add_axes([0.15, 0.10, 0.65, 0.03])
+            slider_ax_maxU      = self.fig.add_axes([0.15, 0.14, 0.65, 0.03])
+
+            self.slider_threshold = Slider(slider_ax_threshold, 'Thresh', 0, 50, valinit=self.threshold)
+            self.slider_risk      = Slider(slider_ax_risk, 'Risk', 0.0, 1.0, valinit=self.risk_factor)
+            self.slider_minU      = Slider(slider_ax_minU, 'MinU', 0, 100, valinit=self.min_utility)
+            self.slider_maxU      = Slider(slider_ax_maxU, 'MaxU', 0, 100, valinit=self.max_utility)
+
+            def update_params(val):
+                self.threshold   = self.slider_threshold.val
+                self.risk_factor = self.slider_risk.val
+                self.min_utility = self.slider_minU.val
+                self.max_utility = self.slider_maxU.val
+
+            self.slider_threshold.on_changed(update_params)
+            self.slider_risk.on_changed(update_params)
+            self.slider_minU.on_changed(update_params)
+            self.slider_maxU.on_changed(update_params)
+
         else:
             line_money, line_points = self.lines
             line_money.set_xdata(x)
@@ -167,10 +191,10 @@ class FirstAgent:
         efficiency = 0
         sum_points = sum(self.points[-10:])
         sum_gold = sum(self.money[-10:])
-        if sum_gold > 0:
-            efficiency = sum_points / sum_gold
+        if sum_points > 0:
+            efficiency = sum_gold / sum_points
 
-        self.eff_text.set_text(f"Points/Gold (10R): {efficiency:.3f}")
+        self.eff_text.set_text(f"Gold/Point (10R): {efficiency:.3f}")
 
         plt.pause(0.05)
 
@@ -180,7 +204,7 @@ class FirstAgent:
         agent_state = states[agent_id]
         current_gold = agent_state["gold"]
         points = agent_state["points"]
-        self.load_params()
+        #self.load_params()
 
         # get auction parameters
         auctions_list = self.get_auctions(auctions)
@@ -193,6 +217,7 @@ class FirstAgent:
         # Bid mechanism
         auctions_to_bid, best_2_auctions = self.get_wanted_auctions(auctions_list, min_utility=self.min_utility, max_utility=self.max_utility)
         bids = {}
+        progress = self.current_round / 1000
         
         if self.current_round >= 994:
             bid_amount =  0.5 * current_gold
@@ -201,12 +226,13 @@ class FirstAgent:
                     current_gold -= int(bid_amount)
         else:
             for auction in auctions_to_bid:
-                bid_amount = ((0.50 * current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
-                if current_gold > 2000:
+                bid_amount = ((0.9 * current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"]) * progress
+                if current_gold > 1000:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
 
-        print(bids)
+        #print(bids)
+        print(self.threshold)
 
 
 
@@ -219,7 +245,7 @@ class FirstAgent:
         # update round counter
         self.current_round += 1
 
-        points_for_pool = 0
+        points_for_pool = 1
         return {"bids": bids, "pool": points_for_pool}
 
 ############################################################################################
