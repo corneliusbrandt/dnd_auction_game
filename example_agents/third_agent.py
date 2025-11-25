@@ -217,22 +217,28 @@ class FirstAgent:
         # Bid mechanism
         auctions_to_bid, best_2_auctions = self.get_wanted_auctions(auctions_list, min_utility=self.min_utility, max_utility=self.max_utility)
         bids = {}
-        progress = self.current_round / 1000
+        progress = self.current_round / 100
         
         if self.current_round >= 994:
             bid_amount =  0.5 * current_gold
             for auction in best_2_auctions[:1]:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
+        if progress >= 0.4 and progress <= 0.8:
+            for auction in auctions_to_bid:
+                bid_amount = ((0.2*current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
+                print("Plateau:", progress)
+                if current_gold > 1000:
+                    bids[auction["id"]] = int(bid_amount)
+                    current_gold -= int(bid_amount)
         else:
             for auction in auctions_to_bid:
-                bid_amount = ((0.9 * current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"]) * progress
+                bid_amount = ((0.8*current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"]) * progress
                 if current_gold > 1000:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
 
         #print(bids)
-        print(self.threshold)
 
 
 
@@ -271,5 +277,6 @@ if __name__ == "__main__":
 
     # Keep plot open
     plt.ioff()
+    plt.savefig("auction_game.png", dpi=300, bbox_inches='tight')
     plt.show()
 
