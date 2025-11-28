@@ -28,7 +28,7 @@ class FirstAgent:
         self.param_file = "agent_params.json"
         if not os.path.exists(self.param_file):
             with open(self.param_file, "w") as f:
-                json.dump({"threshold": 10, "risk_factor": 0.3, "min_utility": 20, "max_utility": 40}, f)
+                json.dump({"threshold": 10, "risk_factor": 0.3, "min_utility": 15, "max_utility": 40}, f)
         self.load_params()
 
     def load_params(self):
@@ -217,24 +217,24 @@ class FirstAgent:
         # Bid mechanism
         auctions_to_bid, best_2_auctions = self.get_wanted_auctions(auctions_list, min_utility=self.min_utility, max_utility=self.max_utility)
         bids = {}
-        progress = self.current_round / 100
+        progress = self.current_round / 1000
         
         if self.current_round >= 994:
             bid_amount =  0.5 * current_gold
             for auction in best_2_auctions[:1]:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
-        if progress >= 0.4 and progress <= 0.8:
+        elif progress >= 0.3 and progress <= 0.8:
             for auction in auctions_to_bid:
-                bid_amount = ((0.2*current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
+                bid_amount = ((0.1*current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"])
                 print("Plateau:", progress)
-                if current_gold > 1000:
+                if current_gold > 10000:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
         else:
             for auction in auctions_to_bid:
-                bid_amount = ((0.8*current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"]) * progress
-                if current_gold > 1000:
+                bid_amount = ((0.4*current_gold)/len(auctions_to_bid)) * (auction["utility"] / auction["expected_value"]) * progress
+                if current_gold > 10000:
                     bids[auction["id"]] = int(bid_amount)
                     current_gold -= int(bid_amount)
 
